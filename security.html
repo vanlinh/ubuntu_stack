@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Setup ubuntu stack with Nginx, MongoDB, Memcached, node.js, Ruby, RVM, Ruby on Rails, Monit, Logrotate">
+    <meta name="author" content="Matīss Ķiris">
+    <title>Security - Ubuntu Stack</title>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="assets/stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/prettify.css" rel="stylesheet">
+    <link href="assets/stylesheets/base.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="index.html">Ubuntu Stack</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="index.html">Home</a></li>
+              <li class="active"><a href="security.html">Security</a></li>
+              <li><a href="web-server.html">Nginx</a></li>
+              <li><a href="database.html">MongoDB</a></li>
+              <li><a href="memcached.html">Memcached</a></li>
+              <li><a href="node.html">node.js</a></li>
+              <li><a href="ruby-rails.html">Ruby on Rails</a></li>
+              <li><a href="monitoring.html">Monit</a></li>
+              <li><a href="logrotate.html">Logrotate</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <header>
+          <h1>MongoDB</h1>
+          <div class="subnav">
+            <ul class="nav nav-pills">
+              <li><a href="#iptables">iptables</a></li>
+              <li><a href="#openssh">OpenSSH</a></li>
+              <li><a href="#ipv6">Disable IPv6</a></li>
+              <li><a href="#system">Mount /tmp as noexec</a></li>
+              <li><a href="#users">Manage users</a></li>
+              <li><a href="#update">Update system</a></li>
+            </ul>
+          </div>
+        </header>
+        <section id="iptables">
+          <h2>iptables</h2>
+          <p>Create iptables.sh with:</p>
+          <pre class="prettyprint">
+#!/bin/sh
+## http://www.cyberciti.biz/tips/five-minutes-to-a-secure-linux-system.html
+
+# Check ext1, usualy its eth0!
+ext1=eth0
+ssh_port=2207
+ext_tcp_ports="80 443"
+
+# Flush all rules
+iptables -F
+iptables -X
+
+# Setting default filter policy
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD DROP
+
+# Allow unlimited traffic on loopback(Set access for localhost)
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# allow input to only outgoing connection like DNS queries
+iptables -A INPUT -i $ext1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# make sure nothing comes in
+iptables -A INPUT -j DROP
+
+# Allow SSH
+iptables -I INPUT -p tcp -m state --state NEW,ESTABLISHED --dport $ssh_port -j ACCEPT
+iptables -A INPUT -p tcp --dport $ssh_port -m recent --set --name ssh --rsource
+iptables -A INPUT -p tcp --dport $ssh_port -m recent ! --rcheck --seconds 60 --hitcount 4 --name ssh --rsource -j ACCEPT
+
+# Brute Force SSH Attack
+# Limit SSH Connections
+iptables -A INPUT -p tcp --dport $ssh_port --syn -m limit --limit 1/m --limit-burst 3 -j ACCEPT
+iptables -A INPUT -p tcp --dport $ssh_port --syn -j DROP
+
+# Open ports
+for port in $ext_tcp_ports
+do
+iptables -I INPUT -p tcp -m state --state NEW,ESTABLISHED --dport $port -j ACCEPT
+done
+
+# end of file</pre>
+          <p><span class="label important">Important!</span> edit iptables.sh and run following commands</p>
+          <pre class="prettyprint">
+sudo chmod 766 iptables.sh # sudo chmod +x iptables.sh
+
+sudo ./iptables.sh
+
+iptables-save</pre>
+        </section>
+        <section id="openssh">
+          <h2>OpenSSH</h3>
+          <p><span class="label notice">Tip</span> <a href="http://www.cyberciti.biz/tips/linux-unix-bsd-openssh-server-best-practices.html">OpenSSH security</a></p>
+          <p>Open and edit OpenSSH configuration file</p>
+          <pre class="prettyprint">sudo vi /etc/ssh/sshd_config</pre>
+          <p>Change following</p>
+          <pre class="prettyprint">
+# Change port
+Port 2207
+
+# Make sure the protocol is set to 2. Version 1 is not secure.
+Protocol 2
+
+# The following config lines protect against brute force attacks.
+LoginGraceTime 2m
+MaxAuthTries 5
+
+# Disable root login
+PermitRootLogin no
+
+# Disable users with empty passwords
+PermitEmptyPasswords no
+
+# Disable .rhosts Files
+IgnoreRhosts yes
+
+# Disable X11Forwarding
+X11Forwarding no
+
+# Limit User Login
+AllowUsers alice bob</pre>
+          <p>Save file and after the edit dont forget to restart</p>
+          <pre class="prettyprint">sudo /etc/init.d/ssh restart</pre>
+        </section>
+        <section id="ipv6">
+          <h2>Disable IPv6</h2>
+          <p>Check if IPv6 is enabled (0 - enabled, 1 - disabled)</p>
+          <pre class="prettyprint">cat /proc/sys/net/ipv6/conf/all/disable_ipv6</pre>
+          <p>Disable IPv6. Add following to /etc/sysctl.conf</p>
+          <pre class="prettyprint">
+# IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1</pre>
+          <p>Save, close and then issue command</p>
+          <pre class="prettyprint">sudo sysctl -p</pre>
+          <h3 id="system">Mount /tmp as noexec</h3>
+          <p>Open</p>
+          <pre class="prettyprint">sudo vi /etc/fstab</pre>
+          <p>add:</p>
+          <pre class="prettyprint">/dev/hda5               /tmp            ext2            noatime,noexec 0 0</pre>
+          <p>save file.</p>
+          <h3>Protect against Fork Bombs</h3>
+          <p>Open</p>
+          <pre class="prettyprint">sudo vi /etc/security/limits.conf</pre>
+          <p>add:</p>
+          <pre class="prettyprint">
+@users           soft    nproc           100
+@users           hard    nproc           150
+@web             soft    nproc           100
+@web             hard    nproc           150</pre>
+          <p><span class="label notice">Notice</span> <strong>@web</strong> is a users group.</p>
+          <p>Save file.</p>
+          <h3>Change time zone to UTC</h3>
+          <p>Run command</p>
+          <pre class="prettyprint">dpkg-reconfigure tzdata</pre>
+          <p>Select <strong>Etc</strong> -> <strong>UTC</strong> -> <strong>Ok</strong></p>
+        </section>
+        <section id="users">
+          <h2>Manage users</h2>
+          <pre class="prettyprint">
+sudo groupadd web
+sudo add user -r --shell /bin/bash --home-dir /home/deploy deploy
+
+sudo useradd -s /sbin/nologin -r webapp
+
+## add new user to the group
+sudo useradd -G web deploy
+
+## add existing user to the group
+sudo usermod -g web #{username}
+
+## Add password to user
+sudo passwd deploy</pre>
+        </section>
+        <section id="update">
+          <h2>Update system</h2>
+          <pre class="prettyprint">apt-get update &amp;&amp; apt-get upgrade</pre>
+          <h3>Install Development Tools</h3>
+          <pre class="prettyprint">sudo apt-get install build-essential</pre>
+          <p>and some essential libraries</p>
+          <pre class="prettyprint">sudo apt-get install openssl libreadline6 libreadline6-dev zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev ncurses-dev automake libtool bison libpcre3 libpcre3-dev</pre>
+          <h3>Install wget and curl</h3>
+          <pre class="prettyprint">sudo apt-get install curl wget</pre>
+          <h3>SCM GIT</h3>
+          <pre class="prettyprint">sudo apt-get install git-core</pre>
+        </section>
+        <div class="actions">
+          <p class="pull-right"><a href="web-server.html" class="btn">Next: Install Nginx</a></p>
+          <p><a href="index.html" class="btn">Home</a></p>
+        </div>
+      </div>
+      <footer class="footer">
+        <p class="pull-right"><a href="#">Back to top</a></p>
+        <p>&copy; Matīss Ķiris 2012</p>
+        <p>Created using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a> from Twitter</p>
+      </footer>
+    </div> <!-- /container -->
+    <script type="text/javascript" src="assets/javascripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/javascripts/prettify/prettify.js"></script>
+    <script type="text/javascript" src="assets/javascripts/jquery.min.js"></script>
+    <script type="text/javascript">
+      $(function() {prettyPrint()});
+    </script>
+  </body>
+</html>

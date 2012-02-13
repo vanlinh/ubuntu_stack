@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Setup ubuntu stack with Nginx, MongoDB, Memcached, node.js, Ruby, RVM, Ruby on Rails, Monit, Logrotate">
+    <meta name="author" content="Matīss Ķiris">
+    <title>Memcached - Ubuntu Stack</title>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="assets/stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/prettify.css" rel="stylesheet">
+    <link href="assets/stylesheets/base.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="index.html">Ubuntu Stack</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="security.html">Security</a></li>
+              <li><a href="web-server.html">Nginx</a></li>
+              <li><a href="database.html">MongoDB</a></li>
+              <li class="active"><a href="memcached.html">Memcached</a></li>
+              <li><a href="node.html">node.js</a></li>
+              <li><a href="ruby-rails.html">Ruby on Rails</a></li>
+              <li><a href="monitoring.html">Monit</a></li>
+              <li><a href="logrotate.html">Logrotate</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <header>
+          <h1>Memcached</h1>
+        </header>
+        <section id="memcached">
+          <h2>Install from Ubuntu repository</h2>
+          <pre class="prettyprint">sudo apt-get install memcached</pre>
+        </section>
+        <div class="actions">
+          <p class="pull-right"><a href="node.html" class="btn">Next: Install node.js</a></p>
+          <p><a href="database.html" class="btn">Previous: Install MongoDB</a></p>
+        </div>
+      </div>
+      <footer class="footer">
+        <p class="pull-right"><a href="#">Back to top</a></p>
+        <p>&copy; Matīss Ķiris 2012</p>
+        <p>Created using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a> from Twitter</p>
+      </footer>
+    </div> <!-- /container -->
+    <script type="text/javascript" src="assets/javascripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/javascripts/prettify/prettify.js"></script>
+    <script type="text/javascript" src="assets/javascripts/jquery.min.js"></script>
+    <script type="text/javascript">
+      $(function() {prettyPrint()});
+    </script>
+  </body>
+</html>
