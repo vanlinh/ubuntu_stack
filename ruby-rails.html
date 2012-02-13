@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Setup ubuntu stack with Nginx, MongoDB, Memcached, node.js, Ruby, RVM, Ruby on Rails, Monit, Logrotate">
+    <meta name="author" content="Matīss Ķiris">
+    <title>Install RVM, Ruby and Rails - Ubuntu Stack</title>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="assets/stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/prettify.css" rel="stylesheet">
+    <link href="assets/stylesheets/base.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="index.html">Ubuntu Stack</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="security.html">Security</a></li>
+              <li><a href="web-server.html">Nginx</a></li>
+              <li><a href="database.html">MongoDB</a></li>
+              <li><a href="memcached.html">Memcached</a></li>
+              <li><a href="node.html">node.js</a></li>
+              <li class="active"><a href="ruby-rails.html">Ruby on Rails</a></li>
+              <li><a href="monitoring.html">Monit</a></li>
+              <li><a href="logrotate.html">Logrotate</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <header>
+          <h1>Installing RVM, Ruby, Rails and Unicorn</h1>
+          <div class="subnav">
+            <ul class="nav nav-pills">
+              <li><a href="#rvm">RVM</a></li>
+              <li><a href="#ruby">Ruby</a></li>
+              <li><a href="#installrails">Rails</a></li>
+            </ul>
+          </div>
+        </header>
+          <h2 id="rvm">Install RVM(Ruby Version Manager)</h2>
+          <p>Switch to newly created deploy user</p>
+          <pre class="prettyprint">su deploy</pre>
+          <p>now we can install RVM</p>
+          <pre class="prettyprint">bash -s stable &lt; &lt;(curl -s https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer)</pre>
+          <p>Load RVM by appending the rvm function sourcing to your .bash_profile</p>
+          <pre class="prettyprint">echo '[[ -s "$HOME/.rvm/scripts/rvm" ]] && . "$HOME/.rvm/scripts/rvm" # Load RVM function' >> ~/.bash_profile</pre>
+          <p><span class="label important">Important!</span> Reload bash</p>
+          <h2 id="ruby">Install Ruby</h2>
+          <!-- <p>Install Zlib using rvm</p>
+          <pre class="prettyprint">rvm pkg install zlib # For the first time!</pre> -->
+          <p>Install ruby</p>
+          <pre class="prettyprint">
+rvm install ruby-1.9.3-p0
+
+rvm use ruby-1.9.3-p0 --default
+
+gem update --system</pre>
+          <h2 id="installrails">Rails</h2>
+          <p>Switch to deploy user</p>
+          <pre class="prettyprint">
+su deploy
+
+mkdir /var/apps/my_app
+
+cd /var/apps/my_app
+
+gem install rails --no-ri --no-rdoc
+gem install unicorn --no-ri --no-rdoc
+
+rvm wrapper ruby-1.9.3-p0 r193 unicorn</pre>
+          <p>Upstart startup script for Unicorn app</p>
+          <pre class="prettyprint">sudo vi /etc/init/my_app.conf</pre>
+          <p>add</p>
+          <pre class="prettyprint">
+description "My rails application"
+
+start on started mongodb # change mongodb to []
+stop on runlevel [016]
+
+console output
+
+exec var/apps/my_app/init.sh
+
+respawn</pre>
+          <p>save and close</p>
+          <p>create application init script (/var/apps/my_app/init.sh)</p>
+          <pre class="prettyprint">
+#!/bin/bash
+
+set -u
+set -e
+
+APP_NAME=my_app
+APP_ROOT="/var/apps/$APP_NAME/current"
+PID="/var/apps/$APP_NAME/current/tmp/pids/unicorn.pid"
+ENV=production
+
+GEM_HOME="/home/deploy/.rvm/gems/ruby-1.9.3-p0"
+
+UNICORN_OPTS="-E $ENV -c $APP_ROOT/config/unicorn.rb"
+
+SET_PATH="cd $APP_ROOT; rvm use 1.9.3-p0; export GEM_HOME=$GEM_HOME"
+CMD="$SET_PATH; bundle exec unicorn_rails $UNICORN_OPTS"
+
+su - deploy -c "$CMD";</pre>
+          <p>save and run</p>
+          <pre class="prettyprint">sudo chmod +x var/apps/my_app/init.sh</pre>
+          <p>start application using Unicorn and Upstart</p>
+          <pre class="prettyprint">sudo start my_app</pre>
+        </section>
+        <div class="actions">
+          <p class="pull-right"><a href="monitoring.html" class="btn">Next: Monitoring with Monit</a></p>
+          <p><a href="node.html" class="btn">Previous: Install node.js</a></p>
+        </div>
+      </div>
+      <footer class="footer">
+        <p class="pull-right"><a href="#">Back to top</a></p>
+        <p>&copy; Matīss Ķiris 2012</p>
+        <p>Created using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a> from Twitter</p>
+      </footer>
+    </div> <!-- /container -->
+    <script type="text/javascript" src="assets/javascripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/javascripts/prettify/prettify.js"></script>
+    <script type="text/javascript" src="assets/javascripts/jquery.min.js"></script>
+    <script type="text/javascript">
+      $(function() {prettyPrint()});
+    </script>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-29160807-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+  </body>
+</html>

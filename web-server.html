@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Setup ubuntu stack with Nginx, MongoDB, Memcached, node.js, Ruby, RVM, Ruby on Rails, Monit, Logrotate">
+    <meta name="author" content="Matīss Ķiris">
+    <title>Nginx - Ubuntu Stack</title>
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link href="assets/stylesheets/bootstrap.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="assets/stylesheets/prettify.css" rel="stylesheet">
+    <link href="assets/stylesheets/base.css" rel="stylesheet">
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="index.html">Ubuntu Stack</a>
+          <div class="nav-collapse">
+            <ul class="nav">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="security.html">Security</a></li>
+              <li class="active"><a href="web-server.html">Nginx</a></li>
+              <li><a href="database.html">MongoDB</a></li>
+              <li><a href="memcached.html">Memcached</a></li>
+              <li><a href="node.html">node.js</a></li>
+              <li><a href="ruby-rails.html">Ruby on Rails</a></li>
+              <li><a href="monitoring.html">Monit</a></li>
+              <li><a href="logrotate.html">Logrotate</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="content">
+        <header>
+          <h1>Nginx</h1>
+        </header>
+        <section id="nginx">
+          <p>Remove apache2 from starting at boot</p>
+          <pre class="prettyprint">sudo update-rc.d -f apache2 remove</pre>
+          <p>Add user and group for nginx</p>
+          <pre class="prettyprint">
+sudo adduser --system --no-create-home --disabled-login --disabled-password --group nginx;
+sudo usermod -g web nginx</pre>
+          <p>Install nginx from source</p>
+          <pre class="prettyprint">
+wget http://nginx.org/download/nginx-1.1.6.tar.gz
+
+tar -zxvf nginx-1.1.6.tar.gz
+
+cd nginx-1.1.6
+
+./configure --prefix=/opt/nginx --user=nginx --group=nginx --with-http_ssl_module --with-http_gzip_static_module --without-http_autoindex_module --without-http_ssi_module --without-http_fastcgi_module
+
+make
+
+sudo make install</pre>
+          <p>Since nginx was installed to /opt/nginx we can create a few symlinks and folders to make it a bit more like the default Ubuntu package of Nginx</p>
+          <pre class="prettyprint">
+sudo ln -s /opt/nginx/sbin/nginx /usr/local/sbin/nginx
+sudo ln -s /opt/nginx/conf /etc/nginx
+sudo mkdir /etc/nginx/sites-available /etc/nginx/sites-enabled
+sudo mkdir /var/log/nginx</pre>
+          <h3>Configure Nginx</h3>
+          <p><span class="label notice">Tip</span> <a href="http://www.cyberciti.biz/tips/linux-unix-bsd-nginx-webserver-security.html" >Nginx security</a></p>
+          <p>Open nginx configuration file</p>
+          <pre class="prettyprint">sudo vi /etc/nginx/nginx.conf</pre>
+          <p>edit</p>
+          <pre class="prettyprint">
+user  nginx;
+
+server_tokens off;
+
+### Add to nginx.conf
+include /etc/nginx/sites-enabled/*</pre>
+          <h3>Nginx init script</h3>
+          <p>Create new upstart configuration file</p>
+          <pre class="prettyprint">sudo vi /etc/init/nginx.conf</pre>
+          <p>now just paste the following in</p>
+          <pre class="prettyprint">
+description "Nginx HTTP Server"
+
+start on runlevel [2]
+stop on runlevel [016]
+
+console output
+exec /usr/local/sbin/nginx -c /etc/nginx/nginx.conf -g "daemon off;"
+
+# Uncomment respawn if you don't use monit
+# respawn</pre>
+          <p>and now start the nginx</p>
+          <pre class="prettyprint">sudo start nginx</pre>
+        </section>
+        <div class="actions">
+          <p class="pull-right"><a href="database.html" class="btn">Next: Install MongoDB</a></p>
+          <p><a href="security.html" class="btn">Previous: Security and Firewall</a></p>
+        </div>
+      </div>
+      <footer class="footer">
+        <p class="pull-right"><a href="#">Back to top</a></p>
+        <p>&copy; Matīss Ķiris 2012</p>
+        <p>Created using <a href="http://twitter.github.com/bootstrap/">Bootstrap</a> from Twitter</p>
+      </footer>
+    </div> <!-- /container -->
+    <script type="text/javascript" src="assets/javascripts/bootstrap.min.js"></script>
+    <script type="text/javascript" src="assets/javascripts/prettify/prettify.js"></script>
+    <script type="text/javascript" src="assets/javascripts/jquery.min.js"></script>
+    <script type="text/javascript">
+      $(function() {prettyPrint()});
+    </script>
+    <script type="text/javascript">
+      var _gaq = _gaq || [];
+      _gaq.push(['_setAccount', 'UA-29160807-1']);
+      _gaq.push(['_trackPageview']);
+
+      (function() {
+        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+      })();
+    </script>
+  </body>
+</html>
