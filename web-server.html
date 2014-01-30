@@ -62,13 +62,13 @@ sudo adduser --system --no-create-home --disabled-login --disabled-password --gr
 sudo usermod -g web nginx</pre>
           <p>Install nginx from source</p>
           <pre class="prettyprint">
-wget http://nginx.org/download/nginx-1.1.6.tar.gz
+wget http://nginx.org/download/nginx-1.5.9.tar.gz
 
-tar -zxvf nginx-1.1.6.tar.gz
+tar xvfz nginx-1.5.9.tar.gz
+cd nginx-1.5.9
 
-cd nginx-1.1.6
 
-./configure --prefix=/opt/nginx --user=nginx --group=nginx --with-http_ssl_module --with-http_gzip_static_module --without-http_autoindex_module --without-http_ssi_module --without-http_fastcgi_module
+./configure --prefix=/opt/nginx --user=nginx --group=nginx --with-http_ssl_module --with-http_gzip_static_module --with-http_ssl_module --with-http_spdy_module --without-http_autoindex_module --without-http_ssi_module --without-http_fastcgi_module --without-http_scgi_module --without-http_uwsgi_module
 
 make
 
